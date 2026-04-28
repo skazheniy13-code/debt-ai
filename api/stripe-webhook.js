@@ -10,6 +10,30 @@ function readRawBody(req) {
   })
 }
 
+async function extractEmailFromCheckoutSession(stripe, session) {
+  const fromCustomerDetails =
+    typeof session?.customer_details?.email === 'string' ? session.customer_details.email.trim() : ''
+  if (fromCustomerDetails) return fromCustomerDetails
+
+  const fromCustomerEmail =
+    typeof session?.customer_email === 'string' ? session.customer_email.trim() : ''
+  if (fromCustomerEmail) return fromCustomerEmail
+
+  // If customer_email isn't present, try to retrieve the Customer.
+  const customerId = typeof session?.customer === 'string' ? session.customer : ''
+  if (!customerId) return ''
+
+  try {
+    const customer = await stripe.customers.retrieve(customerId)
+    const fromCustomer =
+      customer && !customer.deleted && typeof customer.email === 'string' ? customer.email.trim() : ''
+    return fromCustomer || ''
+  } catch (err) {
+    console.error('[api] failed to retrieve stripe customer for email', { customerId, err })
+    return ''
+  }
+}
+
 export default async function handler(req, res) {
   try {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -43,19 +67,24 @@ export default async function handler(req, res) {
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data?.object
-      const email =
-        typeof session?.customer_email === 'string' ? session.customer_email.trim() : ''
-
-      if (email) {
-        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
-          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      const email = await extractEmailFromCheckoutSession(stripe, session)
+      if (!email) {
+        console.error('[api] missing email on checkout.session.completed', {
+          session,
+          eventId: event?.id,
         })
+        // Do not silently succeed: make Stripe retry while you investigate.
+        return res.status(400).json({ error: 'Missing customer email on checkout session' })
+      }
 
-        const { error } = await supabaseAdmin.from('profiles').update({ is_pro: true }).eq('email', email)
-        if (error) {
-          console.error('[api] supabase update profiles failed', error)
-          return res.status(500).json({ error: 'Failed to update user profile' })
-        }
+      const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+        auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+      })
+
+      const { error } = await supabaseAdmin.from('profiles').update({ is_pro: true }).eq('email', email)
+      if (error) {
+        console.error('[api] supabase update profiles failed', { email, error })
+        return res.status(500).json({ error: 'Failed to update user profile' })
       }
     }
 
