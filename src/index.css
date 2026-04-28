@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* App-wide background (premium fintech gradient) */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: rgb(226 232 240);
+  background:
+    radial-gradient(1200px 700px at 15% 10%, rgba(56, 189, 248, 0.18), transparent 55%),
+    radial-gradient(1000px 650px at 85% 15%, rgba(99, 102, 241, 0.18), transparent 55%),
+    radial-gradient(900px 600px at 50% 95%, rgba(168, 85, 247, 0.18), transparent 60%),
+    linear-gradient(180deg, rgb(8 12 24), rgb(6 8 16));
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.35);
+}
+
+/* Thin, subtle scrollbars (Chromium/Edge) */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 999px;
+  border: 2px solid rgba(2, 6, 23, 0.6);
+}
+*::-webkit-scrollbar-track {
+  background: rgba(2, 6, 23, 0.35);
+}
