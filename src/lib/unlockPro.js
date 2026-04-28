@@ -3,8 +3,9 @@ import { loadStripe } from '@stripe/stripe-js'
 let stripePromise = null
 
 function getStripe() {
-  const key = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
-  if (!key) throw new Error('Missing VITE_STRIPE_PUBLISHABLE_KEY')
+  const key =
+    import.meta.env.VITE_STRIPE_PUBLIC_KEY || import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  if (!key) throw new Error('Missing VITE_STRIPE_PUBLIC_KEY')
   if (!stripePromise) stripePromise = loadStripe(key)
   return stripePromise
 }
