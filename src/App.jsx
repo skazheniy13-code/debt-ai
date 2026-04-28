@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Login } from './pages/Login.jsx'
 import { Dashboard } from './pages/Dashboard.jsx'
 import { supabase } from './lib/supabase.js'
+import { SupabaseMissing } from './pages/SupabaseMissing.jsx'
 
 function App() {
   const [session, setSession] = useState(null)
@@ -9,6 +10,14 @@ function App() {
 
   useEffect(() => {
     let active = true
+
+    if (!supabase) {
+      setSession(null)
+      setLoading(false)
+      return () => {
+        active = false
+      }
+    }
 
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return
@@ -29,6 +38,10 @@ function App() {
 
   if (loading) {
     return <div className="p-4 text-white">Loading...</div>
+  }
+
+  if (!supabase) {
+    return <SupabaseMissing />
   }
 
   return session ? (
