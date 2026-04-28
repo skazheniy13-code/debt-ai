@@ -28,9 +28,18 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY
-    const priceId = process.env.STRIPE_PRICE_ID || process.env.VITE_STRIPE_PRICE_ID
+    const priceId =
+      process.env.STRIPE_PRICE_ID ||
+      process.env.VITE_STRIPE_PRICE_ID ||
+      // fallback so deployments don't break if env is misconfigured
+      'price_1TPla80VZXEB5VZ6qIwoklkc'
     if (!stripeSecretKey) return res.status(500).json({ error: 'Stripe is not configured' })
-    if (!priceId) return res.status(500).json({ error: 'Stripe price is not configured' })
+    if (!priceId) {
+      return res.status(500).json({
+        error: 'Stripe price is not configured',
+        hint: 'Set STRIPE_PRICE_ID on Vercel (Project Settings → Environment Variables) and redeploy.',
+      })
+    }
 
     const body = req.body && typeof req.body === 'object' ? req.body : await readJsonBody(req)
     const email = typeof body?.email === 'string' ? body.email.trim() : ''
