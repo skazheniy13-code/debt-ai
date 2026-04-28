@@ -56,7 +56,8 @@ export default async function handler(req, res) {
       cancel_url: `${baseUrl}/pricing`,
     })
 
-    return res.status(200).json({ sessionId: session.id })
+    // Newer Stripe.js removed redirectToCheckout(); client can redirect to session.url directly.
+    return res.status(200).json({ url: session.url, sessionId: session.id })
   } catch (err) {
     console.error('[api] create-checkout error', err)
     return res.status(500).json({ error: 'Failed to create checkout session' })
